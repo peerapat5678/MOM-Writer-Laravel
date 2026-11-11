@@ -1,0 +1,65 @@
+name: Deploy
+
+# Manual only: run from the Actions tab -> Deploy -> Run workflow.
+# Never fires automatically on push.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+# Set DEPLOY_PATH to the folder on your server where the app should live.
+env:
+  DEPLOY_PATH: /var/www/CHANGE_ME
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Sync source into the deploy folder; never touch the server's .env
+      # (real prod secrets) or the build/dependency dirs.
+      - name: Sync project to deploy folder
+        run: |
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='public/build' \
+            --exclude='public/hot' \
+            --exclude='storage/logs/*' \
+            ./ "$DEPLOY_PATH/"
+
+      # First deploy: create .env from the example and give it a real APP_KEY
+      # (openssl, so no PHP is needed on the host). An existing .env is left alone.
+      - name: Ensure .env and APP_KEY
+        working-directory: ${{ env.DEPLOY_PATH }}
+        run: |
+          [ -f .env ] || cp .env.example .env
+          if grep -qE '^APP_KEY=$' .env; then
+            KEY="base64:$(openssl rand -base64 32)"
+            sed -i "s|^APP_KEY=.*|APP_KEY=${KEY}|" .env
+            echo "Generated a new APP_KEY"
+          fi
+
+      - name: Build and start
+        working-directory: ${{ env.DEPLOY_PATH }}
+        run: |
+          mkdir -p public/build
+          docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+          # Publish the freshly built assets to the host public/build that nginx
+          # serves (built assets are baked in the image, not committed to git).
+          PROJECT=$(grep -E '^APP_PROJECT=' .env | cut -d= -f2 | tr -d '\r'); [ -n "$PROJECT" ] || PROJECT=app
+          rm -rf public/build/* 2>/dev/null || true
+          docker cp "${PROJECT}_app:/var/www/html/public/build/." public/build/
+          sleep 3
+          docker compose -f docker-compose.prod.yml exec -T app php artisan optimize:clear || true
+
+      - name: Show running containers
+        working-directory: ${{ env.DEPLOY_PATH }}
+        run: docker compose -f docker-compose.prod.yml ps

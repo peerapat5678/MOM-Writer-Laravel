@@ -1,0 +1,65 @@
+# Local development stack. Use scripts/start.sh|ps1 or `make up`.
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ${APP_PROJECT:-app}_nginx
+    depends_on:
+      - app
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    environment:
+      APP_PROJECT: ${APP_PROJECT:-app}
+      NGINX_ENVSUBST_FILTER: "APP_PROJECT"
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx/conf.d
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    networks:
+      - laravel
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+        APP_PROJECT: "${APP_PROJECT:-app}"
+    container_name: ${APP_PROJECT:-app}_app
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      # Keep vendor + built assets in fast Docker volumes instead of the (slow on
+      # Windows) host bind-mount. Seeded from the image, so the app starts fast.
+      - vendor:/var/www/html/vendor
+      - build_assets:/var/www/html/public/build
+    networks:
+      - laravel
+    restart: unless-stopped
+
+  node:
+    image: node:22-alpine
+    container_name: ${APP_PROJECT:-app}_node
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - node_modules:/var/www/html/node_modules
+    ports:
+      - "${VITE_PORT:-5173}:${VITE_PORT:-5173}"
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    networks:
+      - laravel
+    restart: unless-stopped
+
+networks:
+  laravel:
+    driver: bridge
+
+volumes:
+  node_modules:
+  vendor:
+  build_assets:

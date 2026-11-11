@@ -1,0 +1,46 @@
+# Production stack (nginx + app only). Frontend assets come baked in the image
+# and are published to ./public/build by the deploy workflow.
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ${APP_PROJECT:-app}_nginx
+    depends_on:
+      - app
+    ports:
+      # Bind to localhost only; the host's front nginx reverse-proxies to this.
+      - "127.0.0.1:${NGINX_PORT:-8080}:80"
+    environment:
+      APP_PROJECT: ${APP_PROJECT:-app}
+      NGINX_ENVSUBST_FILTER: "APP_PROJECT"
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx/conf.d
+    volumes:
+      - ./public:/var/www/html/public:ro
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    networks:
+      - laravel
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+        APP_PROJECT: "${APP_PROJECT:-app}"
+    container_name: ${APP_PROJECT:-app}_app
+    working_dir: /var/www/html
+    env_file:
+      - .env
+    volumes:
+      - app_storage:/var/www/html/storage
+    networks:
+      - laravel
+    restart: unless-stopped
+
+networks:
+  laravel:
+    driver: bridge
+
+volumes:
+  app_storage:

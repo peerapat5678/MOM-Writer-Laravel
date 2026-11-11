@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Docker-only pipeline: everything runs inside the project image, so a
+# self-hosted runner only needs Docker access (no PHP/Node/sudo on the host).
+jobs:
+  build:
+    name: Build, test & push
+    runs-on: [self-hosted, linux]
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t "$IMAGE:${{ github.sha }}" .
+
+      # Run tests inside the image (as root: vendor/ is root-owned, dev deps
+      # that provide `artisan test` need write access to install).
+      - name: Run tests
+        run: |
+          docker run --rm --user root --entrypoint sh "$IMAGE:${{ github.sha }}" -c '
+            cp -n .env.example .env || true
+            php artisan key:generate --force
+            composer install --no-interaction --prefer-dist --no-progress
+            php artisan test
+          '
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+
+      - name: Clean up dangling images
+        if: always()
+        run: docker image prune -f
