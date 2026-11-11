@@ -3,18 +3,18 @@
 namespace Tests\Feature;
 
 use App\Services\BackofficeAuthService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Support\MomSchema;
 use Tests\TestCase;
 
 class MomApiTest extends TestCase
 {
-    use RefreshDatabase;
-
     private string $token;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        MomSchema::createMissing();
 
         $this->token = app(BackofficeAuthService::class)->issueTokens('EMP001')['access_token'];
     }

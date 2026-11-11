@@ -60,11 +60,6 @@ jobs:
           sleep 3
           docker compose -f docker-compose.prod.yml exec -T app php artisan optimize:clear || true
 
-      # Create / update the MOM Writer tables (moms, mom_contacts) in DB_DATABASE.
-      - name: Migrate database
-        working-directory: ${{ env.DEPLOY_PATH }}
-        run: docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
-
       - name: Show running containers
         working-directory: ${{ env.DEPLOY_PATH }}
         run: docker compose -f docker-compose.prod.yml ps

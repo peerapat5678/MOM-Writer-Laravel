@@ -47,7 +47,8 @@ BACKOFFICE_AUTH_CONNECTION=sqlite
 
 ```bash
 docker compose up -d                                   # โหลด .env ใหม่
-docker compose exec app php artisan migrate            # ตอบ yes เพื่อสร้างไฟล์ sqlite
+docker compose exec app touch database/database.sqlite   # สร้างไฟล์ฐานข้อมูลว่าง
+docker compose exec app php artisan mom:create-tables  # สร้างตาราง moms, mom_contacts
 docker compose exec app php artisan mom:user EMP001 --name="ชื่อ นามสกุล"   # ระบบจะถามรหัสผ่าน
 ```
 
@@ -55,16 +56,24 @@ docker compose exec app php artisan mom:user EMP001 --name="ชื่อ นา�
 
 ## ฐานข้อมูล (SQL Server)
 
-1. สร้างฐานข้อมูลว่าง (แนะนำ collation ภาษาไทย):
+แอปนี้ **ไม่ใช้ Laravel migration** และไม่ต้องรัน `php artisan migrate` ทั้งตอนติดตั้งและตอน deploy
 
-   ```sql
-   CREATE DATABASE mom_writer COLLATE Thai_100_CI_AS;
-   ```
-
+1. ให้ DBA (หรือผู้ดูแลฐานข้อมูล) รัน `database/schema.mssql.sql` ครั้งเดียวบนฐานข้อมูลของแอป
+   ผ่าน SQL Server Management Studio หรือ `sqlcmd` สคริปต์จะสร้างเฉพาะตารางที่ยังไม่มี
+   ไม่ลบหรือแก้ตารางที่มีอยู่แล้ว รันซ้ำได้ (ถ้ายังไม่มีฐานข้อมูล ในไฟล์มีคำสั่งสร้างให้ด้วย collation ภาษาไทย)
 2. ใส่ค่าใน `.env`: `DB_CONNECTION=sqlsrv`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
    (`DB_TRUST_SERVER_CERTIFICATE=true` ถ้าเซิร์ฟเวอร์ใช้ certificate ที่ออกเอง)
-3. สร้างตาราง: `docker compose exec app php artisan migrate`
-   (workflow Deploy รัน `migrate --force` ให้ทุกครั้ง)
+3. แนะนำให้แอปใช้ login ที่มีแค่สิทธิ์อ่าน/เขียนข้อมูล (`db_datareader` + `db_datawriter`)
+   ไม่มีสิทธิ์สร้างหรือลบตาราง ตัวอย่างอยู่ท้ายไฟล์ SQL
+
+**กันฐานข้อมูลหาย:**
+
+- คำสั่ง artisan ที่ลบตารางหรือข้อมูล (`db:wipe`, `migrate:fresh`, `migrate:refresh`, `migrate:reset`,
+  `migrate:rollback`) ถูกปิดไว้ในทุก environment รันแล้วจะไม่ทำอะไร
+- `php artisan test` รันได้เฉพาะกับ SQLite ในหน่วยความจำ ถ้า config ชี้ไปฐานจริง
+  (เช่นเคยรัน `config:cache` ไว้) test จะหยุดทันทีก่อนแตะฐานข้อมูล
+  กรณีนี้คือสาเหตุที่พบบ่อยที่ทำให้ฐานจริงถูกล้าง: test ที่ใช้ `RefreshDatabase` จะรัน `migrate:fresh`
+  บนฐานที่ config ชี้อยู่
 
 ตารางของ MOM Writer:
 
@@ -124,8 +133,9 @@ php artisan mom:user EMP001 --disable                              # ปิด�
 | `app/Http/Controllers/Api/Mom/` | API ของ MOM และสมุดรายชื่อ |
 | `app/Services/MomDocument.php` | ตรวจเนื้อหาและสร้างคอลัมน์สำหรับค้นหา |
 | `app/Console/Commands/MomLocalUser.php` | คำสั่ง `mom:user` |
-| `database/migrations/2026_11_10_*` | ตาราง `moms`, `mom_contacts` |
-| `tests/Feature/Mom*Test.php` | test ของ API และคำสั่ง `mom:user` (`make test`) |
+| `database/schema.mssql.sql` | สร้างตาราง `moms`, `mom_contacts` บน SQL Server |
+| `app/Support/MomSchema.php` | สร้างตารางเดียวกันสำหรับ SQLite (`php artisan mom:create-tables`) |
+| `tests/Feature/Mom*Test.php` | test ของ API, คำสั่ง `mom:user` / `mom:create-tables` และการกันคำสั่งลบตาราง (`make test`) |
 
 ---
 
@@ -153,7 +163,7 @@ make start   # setup + start คำสั่งเดียว
 make up      # build & start        make down   # stop
 make logs    # ดู log ของ app        make shell  # เข้า bash ใน container app
 make test    # รัน test              make fresh  # ล้าง volume แล้ว build ใหม่
-make artisan c="migrate"
+make artisan c="mom:create-tables"
 make composer c="require foo/bar"
 ```
 

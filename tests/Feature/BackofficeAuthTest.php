@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Services\BackofficeAuthService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -11,8 +10,6 @@ use Tests\TestCase;
 
 class BackofficeAuthTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();

@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Support\MomSchema;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class MomLocalUserTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();
+
+        MomSchema::createMissing();
 
         config()->set('backoffice.connection', 'sqlite');
         config()->set('backoffice.table', 'mom_test_users');

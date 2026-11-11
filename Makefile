@@ -33,7 +33,7 @@ shell: ## Open a shell in the app container
 test: ## Run the test suite
 	$(COMPOSE) exec app php artisan test
 
-artisan: ## Run an artisan command, e.g. make artisan c="migrate"
+artisan: ## Run an artisan command, e.g. make artisan c="route:list"
 	$(COMPOSE) exec app php artisan $(c)
 
 composer: ## Run a composer command, e.g. make composer c="require foo/bar"
