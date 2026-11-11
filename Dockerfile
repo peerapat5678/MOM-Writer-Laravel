@@ -33,6 +33,7 @@ WORKDIR /var/www/html
 # you actually use to shrink this further.
 RUN set -eux; \
     savedAptMark="$(apt-mark showmanual)"; \
+    sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         ca-certificates curl gnupg unzip git \

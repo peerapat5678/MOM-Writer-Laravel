@@ -8,7 +8,7 @@ const backofficeBase = `${normalizedBase}/backoffice/`;
 const routes = [
     {
         path: '/',
-        redirect: { name: 'backoffice.login' },
+        redirect: { name: 'backoffice.moms' },
     },
     {
         path: '/login',
@@ -26,10 +26,15 @@ const routes = [
         component: () => import('../pages/ResetPassword.vue'),
     },
     {
-        path: '/dashboard',
-        name: 'backoffice.dashboard',
-        component: () => import('../pages/Dashboard.vue'),
+        path: '/moms',
+        name: 'backoffice.moms',
+        component: () => import('../pages/MomWriter.vue'),
         meta: { requiresAuth: true },
+    },
+    {
+        // Old starter links and anything unknown land on MOM Writer.
+        path: '/:pathMatch(.*)*',
+        redirect: { name: 'backoffice.moms' },
     },
 ];
 
@@ -45,7 +50,7 @@ router.beforeEach((to) => {
 
     // Already signed in? Skip the auth screens.
     if (!to.meta.requiresAuth && to.name === 'backoffice.login' && isAuthenticated()) {
-        return { name: 'backoffice.dashboard' };
+        return { name: 'backoffice.moms' };
     }
 
     return true;

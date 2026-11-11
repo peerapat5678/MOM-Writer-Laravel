@@ -7,13 +7,20 @@ use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_root_opens_mom_writer(): void
     {
-        $response = $this->get('/');
+        $base = ($p = trim((string) config('app.project'), '/')) === '' ? '' : "/{$p}";
 
-        $response->assertStatus(200);
+        $this->get('/')->assertRedirect("{$base}/backoffice/moms");
+    }
+
+    public function test_backoffice_pages_serve_the_spa(): void
+    {
+        $base = ($p = trim((string) config('app.project'), '/')) === '' ? '' : "/{$p}";
+
+        $this->withoutVite();
+
+        $this->get("{$base}/backoffice/moms")->assertOk()->assertSee('backoffice-app', false);
+        $this->get("{$base}/backoffice/login")->assertOk();
     }
 }

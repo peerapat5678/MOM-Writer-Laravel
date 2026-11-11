@@ -5,11 +5,11 @@
     >
         <div class="flex h-16 items-center gap-3 border-b border-slate-200 px-6">
             <div class="grid h-10 w-10 place-items-center rounded-2xl bg-slate-950 text-sm font-bold text-white shadow-lg shadow-slate-300">
-                BO
+                MW
             </div>
             <div>
-                <p class="text-sm font-semibold text-slate-950">Backoffice</p>
-                <p class="text-xs text-slate-500">Admin console</p>
+                <p class="text-sm font-semibold text-slate-950">MOM Writer</p>
+                <p class="text-xs text-slate-500">บันทึกการประชุม</p>
             </div>
         </div>
 
@@ -71,10 +71,9 @@ defineEmits(['close']);
 const route = useRoute();
 const navigation = [
     {
-        name: 'Dashboard',
-        icon: 'DB',
-        badge: 'Live',
-        to: { name: 'backoffice.dashboard' },
+        name: 'บันทึกการประชุม',
+        icon: 'MOM',
+        to: { name: 'backoffice.moms' },
     },
 ];
 
