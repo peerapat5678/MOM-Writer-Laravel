@@ -11,18 +11,18 @@
                     <span class="h-0.5 w-5 rounded bg-current shadow-[0_6px_0_currentColor,0_-6px_0_currentColor]" />
                 </button>
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-slate-950">Admin Dashboard</p>
+                    <p class="truncate text-sm font-semibold text-slate-950">MOM Writer</p>
                     <p class="truncate text-xs text-slate-500">{{ todayLabel }}</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <div class="hidden rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 sm:block">
+                <div v-if="userRole" class="hidden rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 sm:block">
                     {{ userRole }}
                 </div>
                 <div class="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm">
                     <div class="grid h-8 w-8 place-items-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
-                        AD
+                        {{ initials }}
                     </div>
                     <div class="hidden pr-2 sm:block">
                         <p class="text-xs font-semibold text-slate-950">{{ userName }}</p>
@@ -54,13 +54,16 @@ const savedUser = computed(() => {
     }
 });
 
-const userName = computed(() => savedUser.value.name || 'Admin User');
-const userEmployeeCode = computed(() => savedUser.value.employee_code || 'EMP001');
-const userRole = computed(() => savedUser.value.role || 'Administrator');
-const todayLabel = new Intl.DateTimeFormat('en-US', {
+// Fields come from the UserData record (see BackofficeAuthService::presentUser).
+const userName = computed(() => savedUser.value.name_user || savedUser.value.employee_code || '');
+const userEmployeeCode = computed(() => savedUser.value.employee_code || '');
+const userRole = computed(() => savedUser.value.position || savedUser.value.branch_name || '');
+// First consonant/letter, so Thai names starting with a leading vowel (เ แ โ ไ ใ) still show a letter.
+const initials = computed(() => (userName.value.match(/[ก-ฮA-Za-z0-9]/) || ['?'])[0].toUpperCase());
+const todayLabel = new Intl.DateTimeFormat('th-TH', {
     weekday: 'short',
-    month: 'short',
     day: 'numeric',
+    month: 'short',
     year: 'numeric',
 }).format(new Date());
 </script>

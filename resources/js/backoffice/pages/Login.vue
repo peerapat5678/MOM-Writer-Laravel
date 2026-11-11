@@ -5,8 +5,8 @@
                 <div class="mx-auto grid h-14 w-14 place-items-center rounded-3xl bg-slate-950 text-sm font-bold text-white shadow-xl shadow-slate-300">
                     TG
                 </div>
-                <h1 class="mt-5 text-3xl font-bold tracking-tight text-slate-950">Backoffice Login</h1>
-                <p class="mt-2 text-sm text-slate-600">Sign in to manage the admin console.</p>
+                <h1 class="mt-5 text-3xl font-bold tracking-tight text-slate-950">MOM Writer</h1>
+                <p class="mt-2 text-sm text-slate-600">เข้าสู่ระบบเพื่อเขียนและส่งบันทึกการประชุม</p>
             </div>
 
             <form class="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-300/60 backdrop-blur" @submit.prevent="submit">
@@ -114,8 +114,8 @@ async function submit() {
             user: data.user,
         });
         closeAlert();
-        await showSuccess('เข้าสู่ระบบสำเร็จ', 'กำลังพาไปหน้า Dashboard');
-        router.push({ name: 'backoffice.dashboard' });
+        await showSuccess('เข้าสู่ระบบสำเร็จ', 'กำลังเปิดบันทึกการประชุม');
+        router.push({ name: 'backoffice.moms' });
     } catch (exception) {
         closeAlert();
         error.value = exception.code === 'ECONNABORTED'
